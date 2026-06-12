@@ -4,7 +4,7 @@ from homeassistant.const import Platform
 
 
 DOMAIN = "nice_gate"
-PLATFORMS = [Platform.COVER, Platform.BUTTON, Platform.SWITCH]
+PLATFORMS = [Platform.COVER, Platform.BUTTON, Platform.SWITCH, Platform.DEVICE_TRACKER]
 
 CONF_DEVICE_ID = "device_id"
 CONF_DEVICE_NAME = "device_name"

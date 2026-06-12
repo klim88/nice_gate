@@ -60,6 +60,8 @@ class NiceGateCover(CoordinatorEntity[NiceGateDataUpdateCoordinator], CoverEntit
             "device_event": data.device_event,
             "interface_event": data.interface_event,
             "timestamp": data.timestamp,
+            "latitude": data.latitude,
+            "longitude": data.longitude,
         }
 
     @property

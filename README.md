@@ -10,6 +10,7 @@ This integration connects to a Nice gate through the MyNice cloud/NHK proxy, cre
 - Live status polling: `open`, `closed`, `opening`, `closing`, `stopped`.
 - Optional `button` entities for Nice T4 actions.
 - Optional Yandex-friendly `switch` entities per action.
+- `device_tracker` entity for the gate location on Home Assistant maps, when the controller reports coordinates.
 - Config flow and options flow in the Home Assistant UI.
 - YAML import for unattended setup.
 
@@ -40,9 +41,15 @@ Enter your MyNice email and password. If your account has more than one device, 
 By default the integration creates:
 
 - one `cover` entity for the gate;
+- one `device_tracker` entity for the gate location, if coordinates are available from the Nice status response;
 - `button` entities for step, partial openings and experimental lighting;
 - services for all known primary Nice T4 actions;
 - live status polling every 10 seconds.
+
+## Home Assistant Map
+
+The integration reads the location reported by the Nice controller and exposes it as a `device_tracker` entity.
+Home Assistant's standard Map dashboard can display this entity as a marker. The marker is informational; gate control remains on the main `cover` entity.
 
 ## Action Settings
 

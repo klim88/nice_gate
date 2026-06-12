@@ -47,9 +47,12 @@ class GateStatus:
     device_event: str
     interface_event: str
     timestamp: str
+    interface_name: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     raw_xml: str | None = None
 
-    def as_dict(self, include_raw: bool = False) -> dict[str, str | None]:
+    def as_dict(self, include_raw: bool = False) -> dict[str, object]:
         data = asdict(self)
         if not include_raw:
             data.pop("raw_xml", None)
@@ -213,12 +216,16 @@ class _ConnectedClient:
 def parse_status(xml: str, device_id: int = 1, include_raw: bool = False) -> GateStatus:
     root = _parse_xml(xml)
     device = _find_device(root, device_id)
+    latitude, longitude = _parse_location(_first_text(root, "Location"))
     return GateStatus(
         status=_child_text(device, "DoorStatus"),
         obstruct=_child_text(device, "Obstruct"),
         device_event=_last_event(device),
         interface_event=_interface_last_event(root),
         timestamp=_first_text(root, "Date"),
+        interface_name=_first_text(root, "Name") or None,
+        latitude=latitude,
+        longitude=longitude,
         raw_xml=xml if include_raw else None,
     )
 
@@ -295,3 +302,13 @@ def _interface_last_event(root: ET.Element) -> str:
 
 def _tag(element: ET.Element) -> str:
     return element.tag.split("}", 1)[-1]
+
+
+def _parse_location(value: str) -> tuple[float | None, float | None]:
+    parts = [part.strip() for part in (value or "").split(",")]
+    if len(parts) != 2:
+        return None, None
+    try:
+        return float(parts[0]), float(parts[1])
+    except ValueError:
+        return None, None
