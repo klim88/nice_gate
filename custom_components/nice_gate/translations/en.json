@@ -1,0 +1,77 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nice Gate",
+        "description": "Enter your MyNice account credentials.",
+        "data": {
+          "username": "MyNice email",
+          "password": "Password"
+        }
+      },
+      "device": {
+        "title": "Select gate",
+        "data": {
+          "device_index": "Device"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to MyNice or read gate credentials.",
+      "unknown_device": "Selected device was not found."
+    },
+    "abort": {
+      "already_configured": "This Nice gate is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nice Gate",
+        "menu_options": {
+          "account": "Account and gate",
+          "actions": "Actions and buttons"
+        }
+      },
+      "account": {
+        "title": "MyNice account",
+        "description": "Update your MyNice credentials or re-select the gate. Leave password empty to keep the current password.",
+        "data": {
+          "username": "MyNice email",
+          "password": "New password"
+        }
+      },
+      "device": {
+        "title": "Select gate",
+        "data": {
+          "device_index": "Device"
+        }
+      },
+      "actions": {
+        "title": "Nice actions",
+        "description": "Choose an action. [HA button] means a Home Assistant button entity is enabled. [Yandex switch] means a switch entity for Yandex exposure is enabled.",
+        "data": {
+          "action_key": "Action"
+        }
+      },
+      "action": {
+        "title": "Action settings",
+        "description": "Additional entity settings for `{action_key}`. Service: `nice_gate.{service_name}`. Open, close and stop are always available through the main gate cover; the checkboxes below create extra entities.",
+        "data": {
+          "action_title": "Name",
+          "show_dashboard": "Create Home Assistant button",
+          "expose_yandex": "Create Yandex switch"
+        },
+        "data_description": {
+          "action_title": "This name is used for generated entities.",
+          "show_dashboard": "When enabled, a separate button entity appears under the device. You can add it to a dashboard manually.",
+          "expose_yandex": "When enabled, a separate switch entity appears and can be exposed to Yandex."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to MyNice or read gate credentials.",
+      "unknown_device": "Selected device was not found."
+    }
+  }
+}

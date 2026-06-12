@@ -1,0 +1,77 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nice Gate",
+        "description": "Введите данные аккаунта MyNice.",
+        "data": {
+          "username": "Email MyNice",
+          "password": "Пароль"
+        }
+      },
+      "device": {
+        "title": "Выбор ворот",
+        "data": {
+          "device_index": "Устройство"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не удалось подключиться к MyNice или получить данные ворот.",
+      "unknown_device": "Выбранное устройство не найдено."
+    },
+    "abort": {
+      "already_configured": "Эти ворота Nice уже настроены."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nice Gate",
+        "menu_options": {
+          "account": "Аккаунт и устройство",
+          "actions": "Действия и кнопки"
+        }
+      },
+      "account": {
+        "title": "Аккаунт MyNice",
+        "description": "Обновите логин/пароль MyNice или заново выберите ворота. Оставьте пароль пустым, чтобы сохранить текущий.",
+        "data": {
+          "username": "Email MyNice",
+          "password": "Новый пароль"
+        }
+      },
+      "device": {
+        "title": "Выбор ворот",
+        "data": {
+          "device_index": "Устройство"
+        }
+      },
+      "actions": {
+        "title": "Действия Nice",
+        "description": "Выберите действие. Пометка [HA button] означает, что для действия создана кнопка Home Assistant. Пометка [Yandex switch] означает, что создан отдельный switch для экспорта в Яндекс.",
+        "data": {
+          "action_key": "Действие"
+        }
+      },
+      "action": {
+        "title": "Настройка действия",
+        "description": "Настройки дополнительной сущности для `{action_key}`. Сервис: `nice_gate.{service_name}`. Открыть, закрыть и стоп всегда доступны через основную сущность ворот; галки ниже создают дополнительные объекты.",
+        "data": {
+          "action_title": "Название",
+          "show_dashboard": "Создать кнопку в Home Assistant",
+          "expose_yandex": "Создать switch для Яндекса"
+        },
+        "data_description": {
+          "action_title": "Так это действие будет называться в созданных объектах.",
+          "show_dashboard": "Если включено, в устройстве появится отдельная button-сущность. Ее можно добавить на панель вручную.",
+          "expose_yandex": "Если включено, появится отдельная switch-сущность, которую можно передать в интеграцию Яндекса."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не удалось подключиться к MyNice или получить данные ворот.",
+      "unknown_device": "Выбранное устройство не найдено."
+    }
+  }
+}

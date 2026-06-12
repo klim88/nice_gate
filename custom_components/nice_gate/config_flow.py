@@ -178,7 +178,7 @@ class NiceGateOptionsFlow(config_entries.OptionsFlow):
                 return await self.async_step_device()
 
         return self.async_show_form(
-            step_id="init",
+            step_id="account",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_USERNAME, default=self._username or ""): str,
@@ -222,9 +222,9 @@ class NiceGateOptionsFlow(config_entries.OptionsFlow):
             config = action_options[action.key]
             flags = []
             if config[CONF_ACTION_DASHBOARD]:
-                flags.append("HA")
+                flags.append("HA button")
             if config[CONF_ACTION_YANDEX]:
-                flags.append("Yandex")
+                flags.append("Yandex switch")
             suffix = f" [{', '.join(flags)}]" if flags else ""
             choices[action.key] = f"{config[CONF_ACTION_NAME]} ({action.key}){suffix}"
 
