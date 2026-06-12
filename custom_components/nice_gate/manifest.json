@@ -1,0 +1,11 @@
+{
+  "domain": "nice_gate",
+  "name": "Nice Gate",
+  "codeowners": ["@klim88"],
+  "config_flow": true,
+  "documentation": "https://github.com/klim88/nice_gate",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.3.0"
+}

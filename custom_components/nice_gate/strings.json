@@ -1,0 +1,72 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nice Gate",
+        "description": "Enter your MyNice account credentials.",
+        "data": {
+          "username": "MyNice email",
+          "password": "Password"
+        }
+      },
+      "device": {
+        "title": "Select gate",
+        "data": {
+          "device_index": "Device"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to MyNice or read gate credentials.",
+      "unknown_device": "Selected device was not found."
+    },
+    "abort": {
+      "already_configured": "This Nice gate is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nice Gate",
+        "menu_options": {
+          "account": "Account and gate",
+          "actions": "Action buttons"
+        }
+      },
+      "account": {
+        "title": "Nice Gate account",
+        "description": "Update your MyNice account credentials. Leave password empty to keep the currently stored password.",
+        "data": {
+          "username": "MyNice email",
+          "password": "New password"
+        }
+      },
+      "device": {
+        "title": "Select gate",
+        "data": {
+          "device_index": "Device"
+        }
+      },
+      "actions": {
+        "title": "Action buttons",
+        "description": "Choose a Nice action to rename or expose as an entity.",
+        "data": {
+          "action_key": "Action"
+        }
+      },
+      "action": {
+        "title": "Action settings",
+        "description": "Configure Nice action `{action_key}`. The matching service is `nice_gate.{service_name}`.",
+        "data": {
+          "action_title": "Display name",
+          "show_dashboard": "Show as Home Assistant button entity",
+          "expose_yandex": "Create Yandex-friendly switch entity"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to MyNice or read gate credentials.",
+      "unknown_device": "Selected device was not found."
+    }
+  }
+}

@@ -1,0 +1,175 @@
+open:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+close:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+stop:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+step:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+partial1:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+partial2:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+partial3:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+light_on:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+light_toggle:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+apartment_step:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+hp_step:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+open_block:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+close_block:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+block:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+release:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+master_step:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+master_open:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+master_close:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+slave_step:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+slave_open:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+slave_close:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+release_open:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+release_close:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+bluebus_enable:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"
+bluebus_disable:
+  fields:
+    device_id:
+      selector:
+        text:
+      required: false
+      example: "AA:BB:CC:DD:EE:FF"

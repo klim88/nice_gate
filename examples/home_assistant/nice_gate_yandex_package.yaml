@@ -1,0 +1,96 @@
+# Optional Home Assistant package for Yandex Smart Home / Alice.
+#
+# Copy this file to:
+# /config/packages/nice_gate_yandex.yaml
+#
+# Requirements:
+# - Nice Gate integration is installed and configured;
+# - the main gate cover entity is cover.vorota;
+# - packages are enabled in configuration.yaml:
+#
+#   homeassistant:
+#     packages: !include_dir_named packages
+
+script:
+  vorota_kalitka:
+    alias: "Калитка"
+    mode: single
+    sequence:
+      - action: nice_gate.partial1
+
+  vorota_kalitka_2:
+    alias: "Калитка 2"
+    mode: single
+    sequence:
+      - action: nice_gate.partial2
+
+  vorota_kalitka_3:
+    alias: "Калитка 3"
+    mode: single
+    sequence:
+      - action: nice_gate.partial3
+
+  vorota_poshagovo:
+    alias: "Ворота пошагово"
+    mode: single
+    sequence:
+      - action: nice_gate.step
+
+template:
+  - switch:
+      - name: "alisa_vorota"
+        unique_id: nice_gate_yandex_proxy_vorota
+        icon: mdi:gate
+        state: "{{ states('cover.vorota') in ['open', 'opening', 'closing', 'stopped'] }}"
+        turn_on:
+          - service: cover.open_cover
+            target:
+              entity_id: cover.vorota
+        turn_off:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.vorota
+
+      - name: "alisa_kalitka"
+        unique_id: nice_gate_yandex_proxy_kalitka
+        icon: mdi:walk
+        state: "{{ states('cover.vorota') in ['open', 'opening', 'closing', 'stopped'] }}"
+        turn_on:
+          - service: nice_gate.partial1
+        turn_off:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.vorota
+
+      - name: "alisa_kalitka_1"
+        unique_id: nice_gate_yandex_proxy_kalitka_1
+        icon: mdi:walk
+        state: "{{ states('cover.vorota') in ['open', 'opening', 'closing', 'stopped'] }}"
+        turn_on:
+          - service: nice_gate.partial1
+        turn_off:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.vorota
+
+      - name: "alisa_kalitka_2"
+        unique_id: nice_gate_yandex_proxy_kalitka_2
+        icon: mdi:walk
+        state: "{{ states('cover.vorota') in ['open', 'opening', 'closing', 'stopped'] }}"
+        turn_on:
+          - service: nice_gate.partial2
+        turn_off:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.vorota
+
+      - name: "alisa_kalitka_3"
+        unique_id: nice_gate_yandex_proxy_kalitka_3
+        icon: mdi:walk
+        state: "{{ states('cover.vorota') in ['open', 'opening', 'closing', 'stopped'] }}"
+        turn_on:
+          - service: nice_gate.partial3
+        turn_off:
+          - service: cover.close_cover
+            target:
+              entity_id: cover.vorota
