@@ -30,7 +30,21 @@
         "title": "Nice Gate",
         "menu_options": {
           "account": "Account and gate",
+          "connection": "Connection mode",
           "actions": "Actions and buttons"
+        }
+      },
+      "connection": {
+        "title": "Connection mode",
+        "description": "Choose how Home Assistant talks to the gate. Cloud only keeps the original MyNice relay behavior. Local first uses a LAN IT4WIFI address first and falls back to cloud.",
+        "data": {
+          "connection_mode": "Mode",
+          "local_host": "Local host",
+          "local_port": "Local port"
+        },
+        "data_description": {
+          "local_host": "Manual IP address or hostname of the IT4WIFI module. Leave empty for cloud only.",
+          "local_port": "Local TLS port. IT4WIFI usually uses 443."
         }
       },
       "account": {
@@ -71,6 +85,7 @@
     },
     "error": {
       "cannot_connect": "Could not connect to MyNice or read gate credentials.",
+      "required": "This field is required for the selected mode.",
       "unknown_device": "Selected device was not found."
     }
   }

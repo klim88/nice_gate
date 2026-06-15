@@ -65,10 +65,17 @@ class NHKSession:
 
 
 class NHKClient:
-    def __init__(self, host: str, port: int, timeout: float = 12.0) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        timeout: float = 12.0,
+        legacy_tls: bool = False,
+    ) -> None:
         self.host = host
         self.port = int(port)
         self.timeout = timeout
+        self.legacy_tls = legacy_tls
         self._sock: ssl.SSLSocket | None = None
         self._recv_buffer = b""
         self.session: NHKSession | None = None
@@ -83,10 +90,25 @@ class NHKClient:
     def open(self) -> None:
         raw = socket.create_connection((self.host, self.port), timeout=self.timeout)
         raw.settimeout(self.timeout)
-        context = ssl.create_default_context()
+        context = self._create_ssl_context()
+        self._sock = context.wrap_socket(raw, server_hostname=self.host)
+
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        if not self.legacy_tls:
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            return context
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
-        self._sock = context.wrap_socket(raw, server_hostname=self.host)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.maximum_version = ssl.TLSVersion.TLSv1_2
+        context.set_ciphers("ALL:@SECLEVEL=0")
+        if hasattr(ssl, "OP_LEGACY_SERVER_CONNECT"):
+            context.options |= ssl.OP_LEGACY_SERVER_CONNECT
+        return context
 
     def close(self) -> None:
         if self._sock:

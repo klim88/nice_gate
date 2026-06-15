@@ -30,7 +30,21 @@
         "title": "Nice Gate",
         "menu_options": {
           "account": "Аккаунт и устройство",
+          "connection": "Режим подключения",
           "actions": "Действия и кнопки"
+        }
+      },
+      "connection": {
+        "title": "Режим подключения",
+        "description": "Выберите, как Home Assistant подключается к воротам. Cloud only сохраняет старый режим через MyNice. Local first сначала использует локальный адрес IT4WIFI и при ошибке пробует облако.",
+        "data": {
+          "connection_mode": "Режим",
+          "local_host": "Локальный адрес",
+          "local_port": "Локальный порт"
+        },
+        "data_description": {
+          "local_host": "IP-адрес или имя IT4WIFI в локальной сети. Для cloud only можно оставить пустым.",
+          "local_port": "Локальный TLS-порт. Обычно IT4WIFI использует 443."
         }
       },
       "account": {
@@ -71,6 +85,7 @@
     },
     "error": {
       "cannot_connect": "Не удалось подключиться к MyNice или получить данные ворот.",
+      "required": "Это поле обязательно для выбранного режима.",
       "unknown_device": "Выбранное устройство не найдено."
     }
   }

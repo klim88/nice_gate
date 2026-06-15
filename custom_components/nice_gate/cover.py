@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_ID, CONF_DEVICE_NAME, CONF_PRODUCT_TYPE, DOMAIN
+from .const import CONF_CONNECTION_MODE, CONF_DEVICE_ID, CONF_DEVICE_NAME, CONF_PRODUCT_TYPE, DOMAIN
 from .coordinator import NiceGateDataUpdateCoordinator
 
 
@@ -62,6 +62,12 @@ class NiceGateCover(CoordinatorEntity[NiceGateDataUpdateCoordinator], CoverEntit
             "timestamp": data.timestamp,
             "latitude": data.latitude,
             "longitude": data.longitude,
+            "transport": data.transport,
+            "connection_mode": self._entry.options.get(
+                CONF_CONNECTION_MODE,
+                self._entry.data.get(CONF_CONNECTION_MODE, "cloud"),
+            ),
+            "last_status_error": self.coordinator.last_status_error,
         }
 
     @property

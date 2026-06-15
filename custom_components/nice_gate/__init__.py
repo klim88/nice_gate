@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -12,6 +13,7 @@ from .const import CONF_DEVICE_ID, DOMAIN, PLATFORMS
 from .coordinator import NiceGateDataUpdateCoordinator
 
 SERVICE_ACTIONS = tuple(action.service for action in ACTIONS)
+_LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -41,7 +43,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = NiceGateDataUpdateCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception as exc:
+        _LOGGER.warning("Nice Gate initial refresh failed; entities will keep retrying: %s", exc)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

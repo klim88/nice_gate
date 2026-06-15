@@ -13,3 +13,7 @@ CONF_CLOUD_ID = "cloud_id"
 CONF_PRODUCT_TYPE = "product_type"
 CONF_HOME_ID = "home_id"
 CONF_PERMISSION = "permission"
+
+CONF_CONNECTION_MODE = "connection_mode"
+CONF_LOCAL_HOST = "local_host"
+CONF_LOCAL_PORT = "local_port"

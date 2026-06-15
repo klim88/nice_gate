@@ -18,20 +18,34 @@ from .actions import (
 )
 from .const import (
     CONF_CLOUD_ID,
+    CONF_CONNECTION_MODE,
     CONF_DEVICE_ID,
     CONF_DEVICE_INDEX,
     CONF_DEVICE_NAME,
     CONF_HOME_ID,
+    CONF_LOCAL_HOST,
+    CONF_LOCAL_PORT,
     CONF_PERMISSION,
     CONF_PRODUCT_TYPE,
     DOMAIN,
 )
-from .nice_gate_core import NiceGateSession
+from .nice_gate_core import (
+    CONNECTION_MODE_CLOUD,
+    CONNECTION_MODE_LOCAL_FIRST,
+    CONNECTION_MODE_LOCAL_ONLY,
+    DEFAULT_LOCAL_PORT,
+    NiceGateSession,
+)
 
 CONF_ACTION_KEY = "action_key"
 CONF_ACTION_TITLE = "action_title"
 CONF_SHOW_DASHBOARD = "show_dashboard"
 CONF_EXPOSE_YANDEX = "expose_yandex"
+CONNECTION_MODE_OPTIONS = {
+    CONNECTION_MODE_CLOUD: "Cloud only",
+    CONNECTION_MODE_LOCAL_FIRST: "Local first, cloud fallback",
+    CONNECTION_MODE_LOCAL_ONLY: "Local only",
+}
 
 
 class NiceGateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -152,7 +166,47 @@ class NiceGateOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         return self.async_show_menu(
             step_id="init",
-            menu_options=["account", "actions"],
+            menu_options=["account", "connection", "actions"],
+        )
+
+    async def async_step_connection(self, user_input=None):
+        errors = {}
+        current_mode = self._entry.options.get(
+            CONF_CONNECTION_MODE,
+            self._entry.data.get(CONF_CONNECTION_MODE, CONNECTION_MODE_CLOUD),
+        )
+        current_host = self._entry.options.get(
+            CONF_LOCAL_HOST,
+            self._entry.data.get(CONF_LOCAL_HOST, ""),
+        )
+        current_port = self._entry.options.get(
+            CONF_LOCAL_PORT,
+            self._entry.data.get(CONF_LOCAL_PORT, DEFAULT_LOCAL_PORT),
+        )
+
+        if user_input is not None:
+            mode = user_input[CONF_CONNECTION_MODE]
+            local_host = (user_input.get(CONF_LOCAL_HOST) or "").strip()
+            local_port = int(user_input.get(CONF_LOCAL_PORT) or DEFAULT_LOCAL_PORT)
+            if mode in {CONNECTION_MODE_LOCAL_ONLY, CONNECTION_MODE_LOCAL_FIRST} and not local_host:
+                errors[CONF_LOCAL_HOST] = "required"
+            else:
+                options = dict(self._entry.options)
+                options[CONF_CONNECTION_MODE] = mode
+                options[CONF_LOCAL_HOST] = local_host
+                options[CONF_LOCAL_PORT] = local_port
+                return self.async_create_entry(title="", data=options)
+
+        return self.async_show_form(
+            step_id="connection",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_CONNECTION_MODE, default=current_mode): vol.In(CONNECTION_MODE_OPTIONS),
+                    vol.Optional(CONF_LOCAL_HOST, default=current_host): str,
+                    vol.Optional(CONF_LOCAL_PORT, default=current_port): vol.Coerce(int),
+                }
+            ),
+            errors=errors,
         )
 
     async def async_step_account(self, user_input=None):

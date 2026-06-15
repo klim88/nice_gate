@@ -2,12 +2,18 @@
 
 Home Assistant custom integration for Nice MyNice / IT4WIFI gates.
 
-This integration connects to a Nice gate through the MyNice cloud/NHK proxy, creates a Home Assistant gate entity, exposes live status, and provides optional action buttons and Yandex-friendly switch entities.
+This integration connects Nice MyNice / IT4WIFI gates to Home Assistant, creates a gate entity, exposes live status, and provides optional action buttons and Yandex-friendly switch entities.
+
+Version `0.4.0` adds local LAN control for IT4WIFI modules. MyNice cloud is still used to authenticate and read NHK credentials, but gate status and commands can run directly against the IT4WIFI module inside your local network.
 
 ## Features
 
 - Gate `cover` entity with open, close and stop.
 - Live status polling: `open`, `closed`, `opening`, `closing`, `stopped`.
+- Connection modes:
+  - `cloud`: original MyNice/NHK relay behavior.
+  - `local_first`: use the local IT4WIFI address first, then fall back to cloud if local access fails.
+  - `local_only`: use only the local IT4WIFI address for gate communication.
 - Optional `button` entities for Nice T4 actions.
 - Optional Yandex-friendly `switch` entities per action.
 - `device_tracker` entity for the gate location on Home Assistant maps, when the controller reports coordinates.
@@ -36,6 +42,32 @@ Settings -> Devices & services -> Add integration -> Nice Gate
 
 Enter your MyNice email and password. If your account has more than one device, select the gate.
 
+## Local IT4WIFI Mode
+
+Open:
+
+```text
+Settings -> Devices & services -> Nice Gate -> Configure -> Connection mode
+```
+
+Available modes:
+
+- `Cloud only`: always use the MyNice/NHK relay.
+- `Local first, cloud fallback`: use the LAN IT4WIFI address first, then try cloud if the local path fails.
+- `Local only`: use the LAN IT4WIFI address only for gate communication.
+
+For local modes, set:
+
+- Local host: the IT4WIFI IP address or hostname, for example `192.168.1.50`.
+- Local port: usually `443`.
+
+Notes:
+
+- The integration still uses the MyNice account during setup/session creation to obtain NHK credentials.
+- Once a Home Assistant session is running, `local_first` and `local_only` can send status and commands directly over LAN.
+- If Home Assistant is restarted while the Internet is unavailable, the integration may not be able to create a fresh session until MyNice credentials can be read again.
+- `local_first` is recommended because it keeps local control as the primary path while preserving cloud fallback.
+
 ## Entities
 
 By default the integration creates:
@@ -44,7 +76,14 @@ By default the integration creates:
 - one `device_tracker` entity for the gate location, if coordinates are available from the Nice status response;
 - `button` entities for step, partial openings and experimental lighting;
 - services for all known primary Nice T4 actions;
-- live status polling every 10 seconds.
+- live status polling every 30 seconds.
+
+The main gate entity includes diagnostic attributes such as:
+
+- `raw_status`
+- `transport`: `local` or `cloud`
+- `connection_mode`: configured connection mode
+- `last_status_error`
 
 ## Home Assistant Map
 
@@ -134,3 +173,4 @@ Each service accepts an optional `device_id` field. If omitted, the first loaded
 - No MyNice credentials are stored in this repository.
 - Home Assistant stores credentials in its normal config entry storage or reads them from `secrets.yaml` during YAML import.
 - Examples use placeholder device IDs only.
+- Local host examples use documentation-only private IP addresses and are not hardcoded defaults.

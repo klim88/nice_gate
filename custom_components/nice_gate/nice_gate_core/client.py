@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Literal
 
 from .cloud import AccessoryCredential, MyNiceCloud, extract_accessory_credentials
@@ -23,6 +23,16 @@ GateCommand = Literal[
 
 REMOTE_HOST = "integration.niceappdomain.com"
 REMOTE_PORT = 7890
+DEFAULT_LOCAL_PORT = 443
+
+CONNECTION_MODE_CLOUD = "cloud"
+CONNECTION_MODE_LOCAL_ONLY = "local_only"
+CONNECTION_MODE_LOCAL_FIRST = "local_first"
+CONNECTION_MODES = {
+    CONNECTION_MODE_CLOUD,
+    CONNECTION_MODE_LOCAL_ONLY,
+    CONNECTION_MODE_LOCAL_FIRST,
+}
 
 
 @dataclass(frozen=True)
@@ -50,6 +60,7 @@ class GateStatus:
     interface_name: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    transport: str | None = None
     raw_xml: str | None = None
 
     def as_dict(self, include_raw: bool = False) -> dict[str, object]:
@@ -84,20 +95,40 @@ class NiceGateSession:
         host: str = REMOTE_HOST,
         port: int = REMOTE_PORT,
         timeout: float = 12.0,
+        connection_mode: str = CONNECTION_MODE_CLOUD,
+        local_host: str | None = None,
+        local_port: int = DEFAULT_LOCAL_PORT,
     ) -> None:
         self.credentials = credentials
         self.host = host
         self.port = int(port)
         self.timeout = timeout
+        self.connection_mode = _normalize_connection_mode(connection_mode)
+        self.local_host = (local_host or "").strip() or None
+        self.local_port = int(local_port or DEFAULT_LOCAL_PORT)
 
     @classmethod
-    def login(cls, username: str, password: str, timeout: float = 12.0) -> "NiceGateSession":
+    def login(
+        cls,
+        username: str,
+        password: str,
+        timeout: float = 12.0,
+        connection_mode: str = CONNECTION_MODE_CLOUD,
+        local_host: str | None = None,
+        local_port: int = DEFAULT_LOCAL_PORT,
+    ) -> "NiceGateSession":
         cloud = MyNiceCloud()
         token = cloud.login(username, password)
         credentials = extract_accessory_credentials(cloud.macro_user_data(token))
         if not credentials:
             raise RuntimeError("No Nice accessories were found in this MyNice account")
-        return cls(credentials=credentials, timeout=timeout)
+        return cls(
+            credentials=credentials,
+            timeout=timeout,
+            connection_mode=connection_mode,
+            local_host=local_host,
+            local_port=local_port,
+        )
 
     def devices(self) -> list[GateDevice]:
         return [
@@ -116,13 +147,20 @@ class NiceGateSession:
 
     def status(self, device_index: int = 0, device_id: int = 1, include_raw: bool = False) -> GateStatus:
         credential = self._credential(device_index)
-        with self._connected_client(credential) as client:
-            return parse_status(client.status(), device_id=device_id, include_raw=include_raw)
+        return self._run_with_transport(
+            credential,
+            lambda client, transport: replace(
+                _parse_status_with_retry(client, device_id=device_id, include_raw=include_raw),
+                transport=transport,
+            ),
+        )
 
     def info(self, device_index: int = 0, include_raw: bool = False) -> GateInfo:
         credential = self._credential(device_index)
-        with self._connected_client(credential) as client:
-            return parse_info(client.info(), include_raw=include_raw)
+        return self._run_with_transport(
+            credential,
+            lambda client, _transport: parse_info(client.info(), include_raw=include_raw),
+        )
 
     def command(
         self,
@@ -132,37 +170,89 @@ class NiceGateSession:
         include_raw: bool = False,
     ) -> dict[str, object]:
         credential = self._credential(device_index)
-        with self._connected_client(credential) as client:
+        def run(client: NHKClient, transport: str) -> dict[str, object]:
             response = client.change(device_id=device_id, t4_action=action)
             code, info = parse_nhk_error(response)
             if code:
                 raise RuntimeError(f"NHK command failed with code {code}: {info or ''}".rstrip())
             status_error = None
             try:
-                status = parse_status(client.status(), device_id=device_id, include_raw=include_raw)
+                status = _parse_status_with_retry(client, device_id=device_id, include_raw=include_raw)
+                status = replace(status, transport=transport)
                 status_data = status.as_dict(include_raw=include_raw)
-            except NHKError as exc:
+            except Exception as exc:
                 status_data = None
                 status_error = str(exc)
             return {
                 "ok": True,
                 "action": action,
+                "transport": transport,
                 "response_xml": response if include_raw else None,
                 "status": status_data,
                 "status_error": status_error,
             }
+
+        return self._run_with_transport(credential, run, fallback_after_connected=False)
 
     def _credential(self, index: int) -> AccessoryCredential:
         if index < 0 or index >= len(self.credentials):
             raise IndexError(f"Device index {index} is out of range")
         return self.credentials[index]
 
-    def _connected_client(self, credential: AccessoryCredential) -> "_ConnectedClient":
+    def _run_with_transport(
+        self,
+        credential: AccessoryCredential,
+        callback,
+        fallback_after_connected: bool = True,
+    ):
+        errors: list[str] = []
+        for transport, host, port, legacy_tls in self._transport_candidates():
+            callback_started = False
+            try:
+                with self._connected_client(credential, host, port, legacy_tls) as client:
+                    callback_started = True
+                    return callback(client, transport)
+            except Exception as exc:
+                if self.connection_mode != CONNECTION_MODE_LOCAL_FIRST or (
+                    callback_started and not fallback_after_connected
+                ):
+                    raise
+                errors.append(f"{transport}: {exc}")
+        raise RuntimeError("Nice Gate all transports failed: " + "; ".join(errors))
+
+    def _transport_candidates(self) -> list[tuple[str, str, int, bool]]:
+        cloud = ("cloud", self.host, self.port, False)
+        local = (
+            "local",
+            self.local_host or "",
+            self.local_port,
+            True,
+        )
+        if self.connection_mode == CONNECTION_MODE_CLOUD:
+            return [cloud]
+        if self.connection_mode == CONNECTION_MODE_LOCAL_ONLY:
+            if not self.local_host:
+                raise RuntimeError("Local Nice Gate host is not configured")
+            return [local]
+        if self.connection_mode == CONNECTION_MODE_LOCAL_FIRST:
+            if not self.local_host:
+                return [cloud]
+            return [local, cloud]
+        return [cloud]
+
+    def _connected_client(
+        self,
+        credential: AccessoryCredential,
+        host: str,
+        port: int,
+        legacy_tls: bool,
+    ) -> "_ConnectedClient":
         return _ConnectedClient(
             credential=credential,
-            host=self.host,
-            port=self.port,
+            host=host,
+            port=port,
             timeout=self.timeout,
+            legacy_tls=legacy_tls,
         )
 
 
@@ -173,15 +263,17 @@ class _ConnectedClient:
         host: str,
         port: int,
         timeout: float,
+        legacy_tls: bool,
     ) -> None:
         self.credential = credential
         self.host = host
         self.port = port
         self.timeout = timeout
+        self.legacy_tls = legacy_tls
         self.client: NHKClient | None = None
 
     def __enter__(self) -> NHKClient:
-        self.client = NHKClient(self.host, self.port, timeout=self.timeout)
+        self.client = NHKClient(self.host, self.port, timeout=self.timeout, legacy_tls=self.legacy_tls)
         self.client.open()
         self._connect_with_retry(self.client)
         return self.client
@@ -211,6 +303,38 @@ class _ConnectedClient:
                 client.open()
         if last_exc:
             raise last_exc
+
+
+def _normalize_connection_mode(value: str | None) -> str:
+    if value in CONNECTION_MODES:
+        return value
+    return CONNECTION_MODE_CLOUD
+
+
+def _parse_status_with_retry(
+    client: NHKClient,
+    device_id: int = 1,
+    include_raw: bool = False,
+    attempts: int = 2,
+) -> GateStatus:
+    last_exc: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        xml = client.status()
+        try:
+            return parse_status(xml, device_id=device_id, include_raw=include_raw)
+        except RuntimeError as exc:
+            if not _is_retryable_status_response_error(exc) or attempt >= attempts:
+                raise
+            last_exc = exc
+            time.sleep(0.2)
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Nice Gate status failed without an exception")
+
+
+def _is_retryable_status_response_error(exc: Exception) -> bool:
+    text = str(exc)
+    return "Device id" in text and "not found in NHK response" in text
 
 
 def parse_status(xml: str, device_id: int = 1, include_raw: bool = False) -> GateStatus:
