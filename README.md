@@ -1,142 +1,180 @@
-# Nice Gate for Home Assistant
+# Nice Gate для Home Assistant
 
-Home Assistant custom integration for Nice MyNice / IT4WIFI gates.
+Пользовательская интеграция Home Assistant для ворот Nice MyNice / IT4WIFI.
 
-This integration connects Nice MyNice / IT4WIFI gates to Home Assistant, creates a gate entity, exposes live status, and provides optional action buttons and Yandex-friendly switch entities.
+Интеграция добавляет ворота Nice в Home Assistant как обычную сущность `cover`, показывает состояние ворот, дает кнопки для действий Nice T4 и умеет работать не только через облако MyNice, но и напрямую с модулем IT4WIFI внутри локальной сети.
 
-Version `0.4.0` adds local LAN control for IT4WIFI modules. MyNice cloud is still used to authenticate and read NHK credentials, but gate status and commands can run directly against the IT4WIFI module inside your local network.
+Версия `0.4.0` добавляет локальное управление IT4WIFI. Облако MyNice все еще используется для первичной авторизации и получения NHK-данных, но после создания сессии статусы и команды могут идти напрямую на модуль IT4WIFI по LAN.
 
-## Features
+## Что Умеет Интеграция
 
-- Gate `cover` entity with open, close and stop.
-- Live status polling: `open`, `closed`, `opening`, `closing`, `stopped`.
-- Connection modes:
-  - `cloud`: original MyNice/NHK relay behavior.
-  - `local_first`: use the local IT4WIFI address first, then fall back to cloud if local access fails.
-  - `local_only`: use only the local IT4WIFI address for gate communication.
-- Optional `button` entities for Nice T4 actions.
-- Optional Yandex-friendly `switch` entities per action.
-- `device_tracker` entity for the gate location on Home Assistant maps, when the controller reports coordinates.
-- Config flow and options flow in the Home Assistant UI.
-- YAML import for unattended setup.
+- Создает основную сущность ворот `cover` с командами открыть, закрыть и стоп.
+- Показывает живой статус ворот: `open`, `closed`, `opening`, `closing`, `stopped`.
+- Поддерживает три режима подключения:
+  - `cloud`: старый режим через облачный MyNice/NHK relay.
+  - `local_first`: сначала локальный IT4WIFI, при ошибке fallback в облако.
+  - `local_only`: только локальный IT4WIFI без обращения к облачному relay для команд и статусов.
+- Создает дополнительные `button`-сущности для действий Nice T4.
+- Может создавать Yandex-friendly `switch`-сущности для Алисы и сценариев Яндекса.
+- Создает `device_tracker` для отображения ворот на карте Home Assistant, если контроллер отдает координаты.
+- Поддерживает настройку через UI Home Assistant.
+- Поддерживает YAML import для автоматизированной установки.
+- Использует опрос статуса раз в 30 секунд.
+- В локальных режимах показывает диагностические атрибуты: транспорт, режим подключения и последнюю ошибку статуса.
 
-## HACS Install
+## Как Это Работает
 
-1. Open HACS.
-2. Open the three-dot menu.
-3. Select `Custom repositories`.
-4. Add repository:
+У Nice IT4WIFI есть два пути управления:
+
+1. Через облако MyNice.
+2. Напрямую внутри локальной сети по NHK-протоколу через TLS.
+
+Облако нужно, чтобы авторизоваться и получить данные для NHK-сессии:
+
+- `nhk_username`
+- `nhk_password`
+- `controller_id`
+- `device_id`
+- `cloud_id`
+
+После этого интеграция может обращаться к модулю IT4WIFI напрямую:
+
+```text
+Home Assistant -> IT4WIFI local host -> port 443
+```
+
+Это полезно, если хочется:
+
+- меньше дергать облако Nice;
+- сохранить управление воротами внутри дома;
+- иметь возможность управлять воротами при проблемах с интернетом, если Home Assistant уже имеет действующую сессию;
+- оставить Яндекс, Telegram-бота и другие внешние сценарии поверх той же сущности Home Assistant.
+
+Важно: если Home Assistant полностью перезапущен, а интернет недоступен, интеграция может не создать новую сессию до тех пор, пока MyNice credentials снова не будут доступны. Уже запущенная локальная сессия в `local_only` или `local_first` может продолжать выполнять команды локально.
+
+## Установка Через HACS
+
+1. Откройте HACS.
+2. Откройте меню с тремя точками.
+3. Выберите `Custom repositories`.
+4. Добавьте репозиторий:
 
 ```text
 https://github.com/klim88/nice_gate
 ```
 
-5. Category: `Integration`.
-6. Install `Nice Gate`.
-7. Restart Home Assistant.
-8. Add the integration:
+5. Категория: `Integration`.
+6. Установите `Nice Gate`.
+7. Перезапустите Home Assistant.
+8. Добавьте интеграцию:
 
 ```text
 Settings -> Devices & services -> Add integration -> Nice Gate
 ```
 
-Enter your MyNice email and password. If your account has more than one device, select the gate.
+Введите email и пароль от MyNice. Если в аккаунте несколько устройств, Home Assistant предложит выбрать нужные ворота.
 
-## Local IT4WIFI Mode
+## Настройка Локального IT4WIFI
 
-Open:
+Откройте:
 
 ```text
 Settings -> Devices & services -> Nice Gate -> Configure -> Connection mode
 ```
 
-Available modes:
+Доступные режимы:
 
-- `Cloud only`: always use the MyNice/NHK relay.
-- `Local first, cloud fallback`: use the LAN IT4WIFI address first, then try cloud if the local path fails.
-- `Local only`: use the LAN IT4WIFI address only for gate communication.
+- `Cloud only`: всегда использовать облачный MyNice/NHK relay.
+- `Local first, cloud fallback`: сначала пробовать локальный IT4WIFI, при ошибке уходить в облако.
+- `Local only`: использовать только локальный IT4WIFI для статусов и команд.
 
-For local modes, set:
+Для локальных режимов укажите:
 
-- Local host: the IT4WIFI IP address or hostname, for example `192.168.1.50`.
-- Local port: usually `443`.
+- Local host: IP-адрес или hostname модуля IT4WIFI, например `192.168.1.50`.
+- Local port: обычно `443`.
 
-Notes:
+Рекомендуемый рабочий режим: `Local first, cloud fallback`.
 
-- The integration still uses the MyNice account during setup/session creation to obtain NHK credentials.
-- Once a Home Assistant session is running, `local_first` and `local_only` can send status and commands directly over LAN.
-- If Home Assistant is restarted while the Internet is unavailable, the integration may not be able to create a fresh session until MyNice credentials can be read again.
-- `local_first` is recommended because it keeps local control as the primary path while preserving cloud fallback.
+Для полностью локального теста можно использовать `Local only`. В этом режиме интеграция не использует облачный relay для команд и статусов, но MyNice-аккаунт все равно нужен для создания или обновления NHK-сессии.
 
-## Entities
+## Сущности Home Assistant
 
-By default the integration creates:
+По умолчанию интеграция создает:
 
-- one `cover` entity for the gate;
-- one `device_tracker` entity for the gate location, if coordinates are available from the Nice status response;
-- `button` entities for step, partial openings and experimental lighting;
-- services for all known primary Nice T4 actions;
-- live status polling every 30 seconds.
+- одну сущность `cover` для ворот;
+- одну сущность `device_tracker`, если контроллер отдает координаты;
+- `button`-сущности для пошагового управления, частичных открытий и экспериментального освещения;
+- сервисы домена `nice_gate`;
+- опрос статуса раз в 30 секунд.
 
-The main gate entity includes diagnostic attributes such as:
+Основная сущность ворот имеет диагностические атрибуты:
 
 - `raw_status`
-- `transport`: `local` or `cloud`
-- `connection_mode`: configured connection mode
+- `transport`
+- `connection_mode`
 - `last_status_error`
 
-## Home Assistant Map
+`transport` показывает, каким путем был получен последний статус: локально или через облако.
 
-The integration reads the location reported by the Nice controller and exposes it as a `device_tracker` entity.
-Home Assistant's standard Map dashboard can display this entity as a marker. The marker is informational; gate control remains on the main `cover` entity.
+## Карта Home Assistant
 
-## Action Settings
+Если контроллер Nice отдает координаты, интеграция создает `device_tracker`.
 
-Open:
+Его можно добавить на стандартную карту Home Assistant. Это информационная точка: управление воротами остается на основной сущности `cover` и дополнительных кнопках.
+
+## Настройка Кнопок
+
+Откройте:
 
 ```text
 Settings -> Devices & services -> Nice Gate -> Configure -> Action buttons
 ```
 
-For each Nice action you can configure:
+Для каждого действия Nice можно настроить:
 
-- display name;
-- whether to create a Home Assistant `button` entity;
-- whether to create a Yandex-friendly `switch` entity.
+- отображаемое имя;
+- создавать ли `button`-сущность;
+- создавать ли Yandex-friendly `switch`-сущность.
 
-Extended T4 actions are available as services and can be enabled as entities only when needed.
+Обычно нужны:
 
-## Yandex Smart Home / Alice
+- `partial1` для калитки или частичного открытия;
+- `partial2` и `partial3`, если у автоматики настроены дополнительные варианты частичного открытия;
+- `step`, если используется пошаговая логика;
+- `light_on` и `light_toggle`, если подключено освещение ворот.
 
-For Yandex/Alice, enable `Create Yandex-friendly switch entity` for the actions you want to expose.
+## Алиса / Yandex Smart Home
 
-Recommended actions:
+Для Яндекса удобно включать Yandex-friendly `switch`-сущности у нужных действий.
 
-- gate open/close through the main `cover` entity or a Yandex scenario;
-- `partial1` as the default wicket/gate pedestrian action;
-- `partial2` and `partial3` only if you need additional partial-opening widths;
-- `step` only if you intentionally use step-by-step control.
+Так Алиса видит простые переключатели, а реальная команда все равно выполняется внутри Home Assistant через интеграцию Nice Gate.
 
-An optional package example is included:
+Рекомендуемый вариант:
+
+- основные ворота отдавать как `cover` или через сценарии;
+- калитку отдавать через `partial1`;
+- не добавлять лишние T4-действия в Яндекс, если они не используются в голосовых командах.
+
+Пример YAML-пакета лежит здесь:
 
 ```text
 examples/home_assistant/nice_gate_yandex_package.yaml
 ```
 
-Use it only if you prefer template proxy switches/scenarios instead of the built-in optional switch entities.
+Его можно использовать, если нужны template proxy-сущности вместо встроенных optional switch-сущностей.
 
 ## YAML Import
 
-UI setup is recommended, but YAML import is supported.
+Настройка через UI предпочтительнее, но YAML import поддерживается.
 
-Add credentials to `/config/secrets.yaml`:
+Добавьте credentials в `/config/secrets.yaml`:
 
 ```yaml
 mynice_username: your@email
 mynice_password: your-password
 ```
 
-Add this to `/config/configuration.yaml`:
+Добавьте в `/config/configuration.yaml`:
 
 ```yaml
 nice_gate:
@@ -146,11 +184,11 @@ nice_gate:
   device_id: "AA:BB:CC:DD:EE:FF"
 ```
 
-After restart, Home Assistant imports this into a normal config entry.
+После перезапуска Home Assistant импортирует это в обычную config entry.
 
-## Services
+## Сервисы
 
-The integration exposes services under the `nice_gate` domain, including:
+Интеграция создает сервисы в домене `nice_gate`:
 
 - `nice_gate.open`
 - `nice_gate.close`
@@ -166,11 +204,47 @@ The integration exposes services under the `nice_gate` domain, including:
 - `nice_gate.bluebus_enable`
 - `nice_gate.bluebus_disable`
 
-Each service accepts an optional `device_id` field. If omitted, the first loaded Nice Gate entry is used.
+Каждый сервис принимает необязательное поле `device_id`. Если `device_id` не указан, используется первая загруженная запись Nice Gate.
 
-## Security Notes
+## Безопасность
 
-- No MyNice credentials are stored in this repository.
-- Home Assistant stores credentials in its normal config entry storage or reads them from `secrets.yaml` during YAML import.
-- Examples use placeholder device IDs only.
-- Local host examples use documentation-only private IP addresses and are not hardcoded defaults.
+- Пароль MyNice не хранится в репозитории.
+- Home Assistant хранит credentials в своем стандартном config entry storage или читает их из `secrets.yaml` при YAML import.
+- Примеры используют только placeholder-значения.
+- Локальный IP в документации является примером и не является значением по умолчанию.
+- В локальном режиме управление идет внутри вашей сети, но ответственность за безопасность Wi-Fi, Home Assistant и удаленного доступа остается на владельце системы.
+
+## Проверенный Сценарий
+
+Интеграция проверялась на реальном модуле Nice IT4WIFI.
+
+Подтверждено:
+
+- авторизация через MyNice;
+- получение NHK credentials;
+- управление через облачный режим;
+- управление напрямую в локальной сети;
+- работа `local_only` при отключенном интернете после уже созданной сессии;
+- команды открытия и закрытия;
+- частичное открытие через `partial1`;
+- отображение статусов в Home Assistant;
+- передача сущностей дальше в сценарии Home Assistant, Яндекс и Telegram-бота через обычные сущности Home Assistant.
+
+## Ограничения
+
+- Для первичной авторизации MyNice обычно нужен интернет.
+- Если локальный IP IT4WIFI изменится, его нужно обновить в настройках интеграции.
+- Если один запрос статуса во время движения ворот вернул неполный ответ, интеграция не считает это окончательной аварией сразу и продолжает обновление статуса.
+- Локальный режим рассчитан на IT4WIFI и требует доступности модуля из сети Home Assistant.
+
+## Диагностика
+
+Если ворота не отвечают:
+
+1. Проверьте, что модуль IT4WIFI доступен по локальному IP.
+2. Проверьте режим подключения в настройках интеграции.
+3. Попробуйте `Local first, cloud fallback`, если `Local only` не отвечает.
+4. Обновите credentials через настройки интеграции, если меняли пароль MyNice или была долгая потеря сессии.
+5. Посмотрите атрибуты основной сущности ворот: `transport`, `connection_mode`, `last_status_error`.
+
+Если в Алисе команда принята, но статус в Home Assistant обновился не сразу, это обычно означает, что команда дошла, а следующий статус ворот еще не успел измениться на стороне IT4WIFI. Ручная кнопка обновления статуса принудительно перечитывает состояние.
