@@ -22,6 +22,7 @@ _RETRYABLE_NHK_ERRORS = (
     "Device id",
     "not found in NHK response",
 )
+_POST_COMMAND_REFRESH_DELAYS = (0.7, 2.0, 5.0, 9.0, 14.0)
 
 
 class NiceGateDataUpdateCoordinator(DataUpdateCoordinator[GateStatus]):
@@ -37,6 +38,7 @@ class NiceGateDataUpdateCoordinator(DataUpdateCoordinator[GateStatus]):
         self.device_index = 0
         self.last_status_error: str | None = None
         self._operation_lock = asyncio.Lock()
+        self._post_command_refresh_tasks: set[asyncio.Task[None]] = set()
 
     async def _async_update_data(self) -> GateStatus:
         try:
@@ -51,8 +53,30 @@ class NiceGateDataUpdateCoordinator(DataUpdateCoordinator[GateStatus]):
             raise UpdateFailed(f"Nice Gate status failed: {exc}") from exc
 
     async def async_send_command(self, action: str) -> None:
+        self._cancel_post_command_refreshes()
         await self._async_run_session_job("command", action, self.device_index, 1, False)
         await self.async_request_refresh()
+        self._schedule_post_command_refreshes()
+
+    def _schedule_post_command_refreshes(self) -> None:
+        for delay in _POST_COMMAND_REFRESH_DELAYS:
+            task = self.hass.async_create_task(self._async_delayed_refresh(delay))
+            self._post_command_refresh_tasks.add(task)
+            task.add_done_callback(self._post_command_refresh_tasks.discard)
+
+    def _cancel_post_command_refreshes(self) -> None:
+        for task in tuple(self._post_command_refresh_tasks):
+            task.cancel()
+        self._post_command_refresh_tasks.clear()
+
+    async def _async_delayed_refresh(self, delay: float) -> None:
+        try:
+            await asyncio.sleep(delay)
+            await self.async_request_refresh()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            _LOGGER.debug("Nice Gate post-command refresh after %.1fs failed: %s", delay, exc)
 
     async def _async_run_session_job(
         self,

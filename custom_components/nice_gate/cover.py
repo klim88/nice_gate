@@ -35,9 +35,9 @@ class NiceGateCover(CoordinatorEntity[NiceGateDataUpdateCoordinator], CoverEntit
 
     @property
     def is_closed(self) -> bool | None:
-        if self._status == "closed":
+        if self._status in {"closed", "stopped"}:
             return True
-        if self._status in {"open", "opening", "closing", "stopped"}:
+        if self._status in {"open", "opening", "closing"}:
             return False
         return None
 

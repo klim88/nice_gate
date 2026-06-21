@@ -39,10 +39,10 @@ class NiceGateYandexSwitch(CoordinatorEntity[NiceGateDataUpdateCoordinator], Swi
     def is_on(self) -> bool:
         status = self.coordinator.data.status if self.coordinator.data else "unknown"
         if self.action.key == "close":
-            return status == "closed"
+            return status in {"closed", "stopped"}
         if self.action.key.startswith("light"):
             return False
-        return status in {"open", "opening", "closing", "stopped"}
+        return status in {"open", "opening", "closing"}
 
     async def async_turn_on(self, **kwargs) -> None:
         await self.coordinator.async_send_command(self.action.key)

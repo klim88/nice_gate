@@ -213,8 +213,12 @@ class NiceGateSession:
                     callback_started = True
                     return callback(client, transport)
             except Exception as exc:
+                can_fallback_after_connected = (
+                    fallback_after_connected
+                    or _is_safe_connected_fallback_error(exc)
+                )
                 if self.connection_mode != CONNECTION_MODE_LOCAL_FIRST or (
-                    callback_started and not fallback_after_connected
+                    callback_started and not can_fallback_after_connected
                 ):
                     raise
                 errors.append(f"{transport}: {exc}")
@@ -309,6 +313,10 @@ def _normalize_connection_mode(value: str | None) -> str:
     if value in CONNECTION_MODES:
         return value
     return CONNECTION_MODE_CLOUD
+
+
+def _is_safe_connected_fallback_error(exc: Exception) -> bool:
+    return "NHK command failed with code" in str(exc)
 
 
 def _parse_status_with_retry(
